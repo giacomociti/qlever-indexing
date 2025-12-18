@@ -1,0 +1,4 @@
+@prefix ex: <http://example.org/> .
+
+ex:s ex:hasProperty ex:p1 ;
+     ex:hasProperty ex:p2 .
