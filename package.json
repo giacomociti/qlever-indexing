@@ -1,0 +1,19 @@
+{
+  "name": "qlever-indexing-server",
+  "version": "1.0.0",
+  "description": "A Node.js Express HTTP server, containerized with Docker.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test:e2e": "node test/e2e.server.test.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "axios": "^1.13.2"
+  }
+}
