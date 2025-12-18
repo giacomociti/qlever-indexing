@@ -1,4 +1,5 @@
 import express from 'express';
+import { exec } from 'child_process';
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -11,6 +12,9 @@ app.get('/', (req, res) => {
 
 // Middleware to parse raw body for POST /index
 app.use('/index', express.raw({ type: '*/*', limit: '100mb' }));
+
+// TODO: replace with the command to create qlever index
+const getCommand = (inputFiles, outputFile) => `zip -j ${outputFile} ${inputFiles.join(' ')}`;
 
 // POST /index?file1=10&file2=20
 app.post('/index', async (req, res) => {
@@ -34,7 +38,31 @@ app.post('/index', async (req, res) => {
     if (offset !== body.length) {
       return res.status(400).json({ error: 'Body size does not match sum of file sizes' });
     }
-    res.status(200).json({ message: 'Files saved' });
+
+    const inputFiles = files.map(([name]) => name);
+    const outputFile = `files_${Date.now()}.zip`;
+    const command = getCommand(inputFiles, outputFile);
+
+    exec(command, async (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing command: ${error.message}`);
+        return res.status(500).json({ error: 'Error executing command' });
+      }
+      try {
+        const outputFilePath = path.join(process.cwd(), outputFile);
+        const responseBuffer = await fs.readFile(outputFilePath);
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${outputFile}"`);
+        res.status(200).send(responseBuffer);
+        // Clean up files (async, after response)
+        Promise.all([
+          fs.unlink(outputFilePath),
+          ...inputFiles.map(f => fs.unlink(path.join(process.cwd(), f)))
+        ]).catch(console.error);
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

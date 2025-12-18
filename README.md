@@ -35,8 +35,11 @@ The server must be called with their concatenation, indicating their size in the
 ```bash
 
 cat ./config.json ./file1.ttl ./file2.ttl
-| curl -X POST "http://localhost:3000/index?config.json=64&file1.ttl=92&file2.ttl=60" -H "Content-Type: application/octet-stream" --data-binary @-
+| curl -X POST "http://localhost:3000/index?config.json=64&file1.ttl=92&file2.ttl=60" -H "Content-Type: application/octet-stream" --data-binary @- --output out.zip
 ``` 
+
+In the current implementation, the response is simply a zipped archive of the input data.
+The zip command in [server.js](./src/server.js) will be replaced with the qlever command to create the index file.
 
 There is also a helper command that takes a list of files and makes the curl request with the proper file sizes in the URL:
 ```bash
