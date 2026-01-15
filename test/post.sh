@@ -17,4 +17,4 @@ echo "Posting to ${SERVER_URL} with query: ${query}"
 # Pipe concatenated file contents to curl
 cat "$@" | curl -X POST "${SERVER_URL}?${query}" \
   -H "Content-Type: application/octet-stream" \
-  --data-binary @- --output out.zip
+  --data-binary @- --output out.blob
