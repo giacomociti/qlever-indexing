@@ -1,4 +1,6 @@
-{
-    "name": "qlever-indexing-server",
-    "version": "1.0.0"
-}
+[
+    {
+        "name": "q1",
+        "query": "SELECT * WHERE { <http://example.org/s> ?p ?o }"
+    }
+]

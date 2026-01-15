@@ -13,8 +13,11 @@ app.get('/', (req, res) => {
 // Middleware to parse raw body for POST /index
 app.use('/index', express.raw({ type: '*/*', limit: '100mb' }));
 
-// TODO: replace with the command to create qlever index
-const getCommand = (inputFiles, outputFile) => `zip -j ${outputFile} ${inputFiles.join(' ')}`;
+// command to create qlever index
+const getCommand = (configFile, inputFiles, outputFile) =>{
+  const config = configFile? `$(cat ${configFile})` : '[]'
+  return `CreateBlobMain -i index-basename -j "${config}" -o ${outputFile} ${inputFiles.map(f => `-f ${f}`).join(' ')}`
+}
 
 // POST /index?file1=10&file2=20
 app.post('/index', async (req, res) => {
@@ -32,16 +35,19 @@ app.post('/index', async (req, res) => {
         return res.status(400).json({ error: `Invalid size for ${filename}` });
       }
       const data = body.slice(offset, offset + size);
-      await fs.writeFile(path.join(process.cwd(), filename), data);
+      await fs.writeFile(path.join(process.cwd(), filename), data)
       offset += size;
     }
     if (offset !== body.length) {
       return res.status(400).json({ error: 'Body size does not match sum of file sizes' });
     }
 
-    const inputFiles = files.map(([name]) => name);
-    const outputFile = `files_${Date.now()}.zip`;
-    const command = getCommand(inputFiles, outputFile);
+    const fileNames = files.map(([name]) => name)
+    const configFile = fileNames.find(name => name === 'config.json');
+    const inputFiles = fileNames.filter(name => name !== 'config.json');
+    const outputFile = `files_${Date.now()}.blob`;
+    const command = getCommand(configFile, inputFiles, outputFile);
+    console.log(`Executing command: ${command}`);
 
     exec(command, async (error, stdout, stderr) => {
       if (error) {
@@ -51,19 +57,21 @@ app.post('/index', async (req, res) => {
       try {
         const outputFilePath = path.join(process.cwd(), outputFile);
         const responseBuffer = await fs.readFile(outputFilePath);
-        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Type', 'application/octet-stream');
         res.setHeader('Content-Disposition', `attachment; filename="${outputFile}"`);
         res.status(200).send(responseBuffer);
         // Clean up files (async, after response)
         Promise.all([
           fs.unlink(outputFilePath),
-          ...inputFiles.map(f => fs.unlink(path.join(process.cwd(), f)))
+          ...fileNames.map(f => fs.unlink(path.join(process.cwd(), f)))
         ]).catch(console.error);
       } catch (err) {
+        console.error(`Error reading output file: ${err.message}`);
         res.status(500).json({ error: err.message });
       }
     });
   } catch (err) {
+    console.error(`Error processing request: ${err.message}`);
     res.status(500).json({ error: err.message });
   }
 });
