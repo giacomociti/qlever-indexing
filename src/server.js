@@ -11,7 +11,7 @@ app.get('/', (req, res) => {
 });
 
 // Middleware to parse raw body for POST /index
-app.use('/index', express.raw({ type: '*/*' }));
+app.use('/index', express.raw({ type: '*/*' , limit: '500mb' }));
 
 // command to create qlever index
 const getCommand = (configFile, inputFiles, outputFile) =>{
