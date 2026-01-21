@@ -12,6 +12,7 @@ RUN apt-get update \
 # Set up app directory and install as root
 WORKDIR /app
 COPY package*.json ./
+COPY config.yml ./
 RUN npm install --production
 COPY src ./src
 

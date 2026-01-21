@@ -1,10 +1,19 @@
 import express from 'express';
 import { exec } from 'child_process';
-const app = express();
-const port = process.env.PORT || 3000;
-
+import YAML from 'yaml'
 import fs from 'fs/promises';
 import path from 'path';
+
+const __dirname = path.resolve();
+const configFilePath = path.join(__dirname, 'config.yml');
+const file = await fs.readFile(configFilePath, 'utf8')
+const configObject = YAML.parse(file)
+const jsonConfigFile = path.join(__dirname, 'config.json');
+await fs.writeFile(jsonConfigFile, JSON.stringify(configObject, null, 2))
+console.log(configObject)
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Hello, world!' });
@@ -14,8 +23,8 @@ app.get('/', (req, res) => {
 app.use('/index', express.raw({ type: '*/*' , limit: '500mb' }));
 
 // command to create qlever index
-const getCommand = (configFile, inputFiles, outputFile) =>{
-  const config = configFile? `$(cat ${configFile})` : '[]'
+const getCommand = (inputFiles, outputFile) =>{
+  const config = `$(cat ${jsonConfigFile})`
   return `CreateBlobMain -i index-basename -j "${config}" -o ${outputFile} ${inputFiles.map(f => `-f ${f}`).join(' ')}`
 }
 
@@ -42,11 +51,9 @@ app.post('/index', async (req, res) => {
       return res.status(400).json({ error: 'Body size does not match sum of file sizes' });
     }
 
-    const fileNames = files.map(([name]) => name)
-    const configFile = fileNames.find(name => name === 'config.json');
-    const inputFiles = fileNames.filter(name => name !== 'config.json');
+    const inputFiles = files.map(([name]) => name)
     const outputFile = `files_${Date.now()}.blob`;
-    const command = getCommand(configFile, inputFiles, outputFile);
+    const command = getCommand(inputFiles, outputFile);
     console.log(`Executing command: ${command}`);
 
     exec(command, async (error, stdout, stderr) => {
@@ -63,7 +70,7 @@ app.post('/index', async (req, res) => {
         // Clean up files (async, after response)
         Promise.all([
           fs.unlink(outputFilePath),
-          ...fileNames.map(f => fs.unlink(path.join(process.cwd(), f)))
+          ...inputFiles.map(f => fs.unlink(path.join(process.cwd(), f)))
         ]).catch(console.error);
       } catch (err) {
         console.error(`Error reading output file: ${err.message}`);

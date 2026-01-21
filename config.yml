@@ -1,0 +1,19 @@
+-
+  name: q1
+  query: |
+    SELECT * 
+    WHERE { 
+      <http://example.org/s> ?p ?o 
+    }
+
+-
+  name: q2
+  geo-index-var: ?geo
+  query: |
+    PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+
+    SELECT * 
+    WHERE {
+      ?s geo:asWKT ?geo .
+      FILTER(?geo != "POINT Z(23.731209710240364 37.968939766287804 0)"^^geo:wktLiteral) .
+    }
