@@ -1,6 +1,0 @@
-[
-    {
-        "name": "q1",
-        "query": "SELECT * WHERE { <http://example.org/s> ?p ?o }"
-    }
-]
